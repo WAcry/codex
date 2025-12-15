@@ -221,7 +221,7 @@ pub(super) fn find_family_for_model(slug: &str) -> ModelFamily {
             shell_type: ConfigShellToolType::Local,
             context_window: Some(200_000),
         )
-    } else if slug.starts_with("gpt-4.1") {
+    } else if slug.starts_with("gpt-4.1") || slug.starts_with("openai/gpt-4.1") {
         model_family!(
             slug, "gpt-4.1",
             needs_special_apply_patch_instructions: true,
@@ -233,19 +233,19 @@ pub(super) fn find_family_for_model(slug: &str) -> ModelFamily {
             apply_patch_tool_type: Some(ApplyPatchToolType::Function),
             context_window: Some(96_000),
         )
-    } else if slug.starts_with("gpt-4o") {
+    } else if slug.starts_with("gpt-4o") || slug.starts_with("openai/gpt-4o") {
         model_family!(
             slug, "gpt-4o",
             needs_special_apply_patch_instructions: true,
             context_window: Some(128_000),
         )
-    } else if slug.starts_with("gpt-3.5") {
+    } else if slug.starts_with("gpt-3.5") || slug.starts_with("openai/gpt-3.5") {
         model_family!(
             slug, "gpt-3.5",
             needs_special_apply_patch_instructions: true,
             context_window: Some(16_385),
         )
-    } else if slug.starts_with("test-gpt-5") {
+    } else if slug.starts_with("test-gpt-5") || slug.starts_with("openai/test-gpt-5") {
         model_family!(
             slug, slug,
             supports_reasoning_summaries: true,
@@ -294,7 +294,7 @@ pub(super) fn find_family_for_model(slug: &str) -> ModelFamily {
         )
 
     // Production models.
-    } else if slug.starts_with("gpt-5.1-codex-max") {
+    } else if slug.starts_with("gpt-5.1-codex-max") || slug.starts_with("openai/gpt-5.1-codex-max") {
         model_family!(
             slug, slug,
             supports_reasoning_summaries: true,
@@ -310,6 +310,9 @@ pub(super) fn find_family_for_model(slug: &str) -> ModelFamily {
     } else if slug.starts_with("gpt-5-codex")
         || slug.starts_with("gpt-5.1-codex")
         || slug.starts_with("codex-")
+        || slug.starts_with("openai/gpt-5-codex")
+        || slug.starts_with("openai/gpt-5.1-codex")
+        || slug.starts_with("openai/codex-")
     {
         model_family!(
             slug, slug,
@@ -323,7 +326,7 @@ pub(super) fn find_family_for_model(slug: &str) -> ModelFamily {
             truncation_policy: TruncationPolicy::Tokens(10_000),
             context_window: Some(CONTEXT_WINDOW_272K),
         )
-    } else if slug.starts_with("gpt-5.2") {
+    } else if slug.starts_with("gpt-5.2") || slug.starts_with("openai/gpt-5.2") {
         model_family!(
             slug, slug,
             supports_reasoning_summaries: true,
@@ -337,7 +340,7 @@ pub(super) fn find_family_for_model(slug: &str) -> ModelFamily {
             supports_parallel_tool_calls: true,
             context_window: Some(CONTEXT_WINDOW_272K),
         )
-    } else if slug.starts_with("gpt-5.1") {
+    } else if slug.starts_with("gpt-5.1") || slug.starts_with("openai/gpt-5.1") {
         model_family!(
             slug, "gpt-5.1",
             supports_reasoning_summaries: true,
@@ -351,7 +354,7 @@ pub(super) fn find_family_for_model(slug: &str) -> ModelFamily {
             supports_parallel_tool_calls: true,
             context_window: Some(CONTEXT_WINDOW_272K),
         )
-    } else if slug.starts_with("gpt-5") {
+    } else if slug.starts_with("gpt-5") || slug.starts_with("openai/gpt-5") {
         model_family!(
             slug, "gpt-5",
             supports_reasoning_summaries: true,
