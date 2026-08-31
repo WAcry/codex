@@ -10,7 +10,7 @@ $keep = @(
     ".github/workflows/fork-release.yml"
 )
 
-$workflows = gh workflow list --all --repo $repo --json path, state, id, name | ConvertFrom-Json
+$workflows = gh workflow list --all --repo $repo --json path,state,id,name | ConvertFrom-Json
 if (-not $workflows) {
     Write-Host "没有列出任何 workflow。先把 fork-ci.yml 合进 main，并在仓库 Settings > Actions 里打开 Actions。"
     exit 1
