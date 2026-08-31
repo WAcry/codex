@@ -21,7 +21,7 @@ jobs:
     outputs:
       make_latest: ${{ steps.parse.outputs.make_latest }}
       prerelease: ${{ steps.parse.outputs.prerelease }}
-      upstream_base: ${{ steps.parse.outputs.upstream_base }}
+      upstream_commit: ${{ steps.parse.outputs.upstream_commit }}
       upstream_version: ${{ steps.parse.outputs.upstream_version }}
       version: ${{ steps.parse.outputs.version }}
     steps:
@@ -56,12 +56,14 @@ jobs:
             exit 1
           fi
 
-          git fetch --no-tags https://github.com/openai/codex.git main:refs/remotes/upstream/main
-          upstream_base="$(git merge-base HEAD refs/remotes/upstream/main)"
+          upstream_ref=refs/tags/upstream-release
+          git fetch --no-tags https://github.com/openai/codex.git \
+            "refs/tags/rust-v${upstream_version}:${upstream_ref}"
+          upstream_commit="$(git rev-list -n 1 "${upstream_ref}")"
 
           echo "make_latest=${make_latest}" >> "${GITHUB_OUTPUT}"
           echo "prerelease=${prerelease}" >> "${GITHUB_OUTPUT}"
-          echo "upstream_base=${upstream_base}" >> "${GITHUB_OUTPUT}"
+          echo "upstream_commit=${upstream_commit}" >> "${GITHUB_OUTPUT}"
           echo "upstream_version=${upstream_version}" >> "${GITHUB_OUTPUT}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
           echo "Using fork version ${version} based on upstream ${upstream_version}"
@@ -90,6 +92,7 @@ jobs:
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends binutils libcap-dev pkg-config
       - name: Stamp workspace version
         env:
+          BASE_VERSION: ${{ needs.tag-check.outputs.upstream_version }}
           FORK_VERSION: ${{ needs.tag-check.outputs.version }}
         run: python3 fork/scripts/stamp-workspace-version.py
       - name: Build bwrap and export digest
@@ -139,6 +142,7 @@ jobs:
           prefix-key: fork-release-windows
       - name: Stamp workspace version
         env:
+          BASE_VERSION: ${{ needs.tag-check.outputs.upstream_version }}
           FORK_VERSION: ${{ needs.tag-check.outputs.version }}
         run: python fork/scripts/stamp-workspace-version.py
       - name: Build canonical package
@@ -198,7 +202,7 @@ jobs:
       - name: Release notes
         id: notes
         env:
-          UPSTREAM_BASE: ${{ needs.tag-check.outputs.upstream_base }}
+          UPSTREAM_COMMIT: ${{ needs.tag-check.outputs.upstream_commit }}
           UPSTREAM_VERSION: ${{ needs.tag-check.outputs.upstream_version }}
           VERSION: ${{ needs.tag-check.outputs.version }}
         run: |
@@ -211,7 +215,7 @@ jobs:
             echo "- commit: ${commit}"
             echo "- tag: ${GITHUB_REF_NAME}"
             echo "- upstream release: openai/codex rust-v${UPSTREAM_VERSION}"
-            echo "- upstream main base: openai/codex@${UPSTREAM_BASE}"
+            echo "- upstream release commit: openai/codex@${UPSTREAM_COMMIT}"
             echo "- Linux package: x86_64-unknown-linux-gnu, glibc 2.35 baseline (unsigned)"
             echo "- Windows package: x86_64-pc-windows-msvc (unsigned)"
           } > "${notes}"

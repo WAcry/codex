@@ -1,4 +1,4 @@
-# 禁用 WAcry/codex 上除 fork-ci / fork-release 以外的 GitHub Actions。
+# 禁用 WAcry/codex 上除 fork-ci / fork-release / fork-sync-upstream 以外的 GitHub Actions。
 # 上游 YAML 留在树里，只改远端启用状态。需要 gh 已登录。
 #
 # 用法：在仓库根目录 pwsh -File fork/scripts/disable-upstream-workflows.ps1
@@ -7,7 +7,8 @@ $ErrorActionPreference = "Stop"
 $repo = "WAcry/codex"
 $keep = @(
     ".github/workflows/fork-ci.yml",
-    ".github/workflows/fork-release.yml"
+    ".github/workflows/fork-release.yml",
+    ".github/workflows/fork-sync-upstream.yml"
 )
 
 $workflowJson = gh workflow list --all --limit 1000 --repo $repo --json path,state,id,name

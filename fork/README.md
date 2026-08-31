@@ -16,7 +16,7 @@
 
 当前的初心：让 Codex 能好好接多种 LLM，而不是只围绕 GPT / OpenAI 官方接口来写。
 
-同步 `upstream/main` 时，除了按 [OVERLAY.md](OVERLAY.md) 保住已有补丁，还要扫一眼上游新增的模型、鉴权、协议、provider 相关代码。如果它把行为写死在单一厂商上（硬编码模型名、只认一种 API、把 ChatGPT 登录当成唯一路径），即使我们还没做对应功能，也要开 ADR 评估：忽略、加适配，还是改一刀。原则和现有功能冲突时，优先保住原则，再决定功能要不要跟。
+查看 `origin/upstream` 或采用新的上游 Release 时，除了按 [OVERLAY.md](OVERLAY.md) 保住已有补丁，还要扫一眼上游新增的模型、鉴权、协议、provider 相关代码。如果它把行为写死在单一厂商上（硬编码模型名、只认一种 API、把 ChatGPT 登录当成唯一路径），即使我们还没做对应功能，也要开 ADR 评估：忽略、加适配，还是改一刀。原则和现有功能冲突时，优先保住原则，再决定功能要不要跟。
 
 原则本身若要改，先写 ADR，不要在同步时口头改口径。
 
@@ -57,7 +57,13 @@ git remote add upstream https://github.com/openai/codex.git
 git fetch upstream
 ```
 
-`main` 尽量跟上游，但不要直接 `git push origin main`。改动和上游同步都走 PR，CI 绿了之后 squash。规则见 [ADR 0002](adr/0002-main-分支与持续集成.md)。
+不要混淆两个同名概念：
+
+- 本地 remote `upstream` 指向 `openai/codex`
+- 远端分支 `origin/upstream` 镜像 `openai/codex main`
+- 远端分支 `origin/main` 只采用已经发布的 `rust-v*` tag，包括 alpha / beta，再叠加 fork overlay
+
+`fork-sync-upstream.yml` 每天 fast-forward `origin/upstream`，也可在 Actions 手动触发。`main` 不直接合入 `origin/upstream`，所有改动和发布基线同步都走 PR，CI 绿了之后 squash。规则见 [ADR 0002](adr/0002-main-分支与持续集成.md)。
 
 ## 改代码时
 
@@ -71,7 +77,7 @@ git fetch upstream
 规则见 [ADR 0001](adr/0001-fork-版本与发布.md)。
 
 - 版本：`{上游完整版本}.wa.{N}`，标签 `wa-v` 加版本，例如 `wa-v0.152.0-alpha.6.wa.1`
-- `main` 上 `codex-rs` workspace 版本保持 `0.0.0`
+- `main` 上 `codex-rs` workspace 版本等于当前采用的上游 release tag；发布任务临时改成完整 fork 版本
 - 在 `origin/main` 的提交上推 annotated tag，由 `fork-release.yml` 构建 Windows x64 ZIP 和 Linux x64 GNU tar.gz，挂到 GitHub Releases
 - 不发 npm / R2 / WinGet，不签名
 
@@ -99,14 +105,29 @@ TUI/CLI 不检查、不提示升级。换版本就下载新包，整体替换旧
 
 ## 跟上游同步
 
+`origin/upstream` 只镜像开发主线。手动同步一次：
+
 ```
-git fetch upstream
-git checkout -b sync/upstream-$(Get-Date -Format yyyy-MM-dd)
-git merge upstream/main
-# 冲突按 OVERLAY 处理，然后开 PR 进 main
+git fetch upstream main
+git push origin upstream/main:upstream
 ```
 
-冲突解开之后：
+不要因为 `origin/upstream` 有新 commit 就更新 `main`。先等上游发布要采用的 `rust-v*` tag，再从当前 `main` 建同步分支：
+
+```
+git fetch upstream --tags
+git fetch origin main
+git switch --create sync/rust-v0.152.0-alpha.6 origin/main
+git restore --source=rust-v0.152.0-alpha.6 --staged --worktree -- .
+# 提交上游 release tree，再从 origin/main 取回 OVERLAY 中的 fork 专属文件，
+# 并逐项重新应用上游文件里的小 hunk
+git push --set-upstream origin HEAD
+# 开 PR 进 main
+```
+
+同步分支必须包含当前 `main`。只从 release tag 分叉时，GitHub 三方合并会保留 `main` 独有的未发布代码，不能达到回退效果。PR 的 tree diff 必须同时做到：采用目标 release tag、删除 tag 之后尚未发布的上游代码、保留 overlay。
+
+重新应用完成后：
 
 1. 打开 `OVERLAY.md`，每一行看一遍：这块补丁还要不要。
 2. 对照上面的原则，看上游这轮有没有把多模型支持收窄。有的话记到 `backlog.md` 或直接开 ADR，不要合进去就不管了。
@@ -127,5 +148,5 @@ git merge upstream/main
 - 新决策用 `adr/0000-template.md` 开篇，中文写。
 - 不要在本地跑测试。依赖远端 `fork-ci.yml`。
 - 不要主动增加 gate 或保护。默认人会遵守文档，违反契约时直接报错。
-- 不要改上游 `.github/workflows/` 里已有的 yml。fork 的 CI/发布只放 `fork-ci.yml` 和 `fork-release.yml`。
+- 不要改上游 `.github/workflows/` 里已有的 yml。fork 专属 workflow 只放 `fork-ci.yml`、`fork-release.yml` 和 `fork-sync-upstream.yml`。
 - 上游新 workflow 出现在 Actions 里时，跑 `fork/scripts/disable-upstream-workflows.ps1`。

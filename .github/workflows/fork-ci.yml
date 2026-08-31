@@ -46,9 +46,9 @@ jobs:
       - name: cargo fmt
         run: cargo fmt -- --config imports_granularity=Item --check
       - name: cargo clippy
-        run: cargo clippy --locked --bin codex
+        run: cargo clippy --bin codex
       - name: Check release-only code
-        run: cargo check --locked --release --bin codex
+        run: cargo check --release --bin codex
       - name: Project tests
         run: |
           just test -p codex-core --lib
@@ -81,7 +81,7 @@ jobs:
         shell: bash
         run: |
           export LIBSQLITE3_FLAGS=SQLITE_DISABLE_INTRINSIC
-          cargo check --locked --release --bin codex
+          cargo check --release --bin codex
 
   required:
     name: Fork CI
