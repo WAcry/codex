@@ -3,7 +3,7 @@
 - **日期：** YYYY-MM-DD
 - **Fork-ADR：** NNNN
 
-ADR 只记录当前生效的决策。还没决定实施的想法留在 [backlog.md](../backlog.md)。开始写 ADR 就要在同一项工作里落地，不写待批准或暂不实施的 ADR。
+ADR 只记录当前生效的决策。还没决定采用的想法留在 [backlog.md](../backlog.md)。开始写 ADR，决策就立即生效；审查和讨论产生变化时直接修改这篇 ADR。不写待批准或暂不生效的 ADR。
 
 决策变化时直接修改原 ADR。决策失效时删除 ADR、对应补丁和 [OVERLAY.md](../OVERLAY.md) 中的条目。Git 历史保留旧内容，ADR 不设状态字段。
 
