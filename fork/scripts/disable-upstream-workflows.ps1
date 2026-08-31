@@ -10,7 +10,11 @@ $keep = @(
     ".github/workflows/fork-release.yml"
 )
 
-$workflows = gh workflow list --all --repo $repo --json path,state,id,name | ConvertFrom-Json
+$workflowJson = gh workflow list --all --limit 1000 --repo $repo --json path,state,id,name
+if ($LASTEXITCODE -ne 0) {
+    throw "读取 $repo 的 workflow 失败。"
+}
+$workflows = $workflowJson | ConvertFrom-Json
 if (-not $workflows) {
     Write-Host "没有列出任何 workflow。先把 fork-ci.yml 合进 main，并在仓库 Settings > Actions 里打开 Actions。"
     exit 1
@@ -20,20 +24,37 @@ foreach ($wf in $workflows) {
     $path = $wf.path
     if ($keep -contains $path) {
         if ($wf.state -ne "active") {
-            Write-Host "enable $path"
+            Write-Host "启用 $path"
             gh workflow enable --repo $repo $wf.id
+            if ($LASTEXITCODE -ne 0) {
+                throw "启用 $path 失败。"
+            }
         }
         else {
-            Write-Host "keep $path"
+            Write-Host "保留 $path"
         }
         continue
     }
 
     if ($wf.state -eq "active") {
-        Write-Host "disable $path"
+        Write-Host "禁用 $path"
         gh workflow disable --repo $repo $wf.id
+        if ($LASTEXITCODE -ne 0) {
+            throw "禁用 $path 失败。"
+        }
     }
     else {
-        Write-Host "already disabled $path"
+        Write-Host "已经禁用 $path"
     }
+}
+
+$activeJson = gh workflow list --all --limit 1000 --repo $repo --json path,state
+if ($LASTEXITCODE -ne 0) {
+    throw "复核 $repo 的 workflow 失败。"
+}
+$unexpected = $activeJson |
+    ConvertFrom-Json |
+    Where-Object { $_.state -eq "active" -and $keep -notcontains $_.path }
+if ($unexpected) {
+    throw "仍有上游 workflow 处于启用状态：$($unexpected.path -join ', ')"
 }

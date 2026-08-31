@@ -20,7 +20,7 @@ jobs:
     name: Linux
     if: github.repository == 'WAcry/codex'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: codex-rs
@@ -32,6 +32,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           components: rustfmt, clippy
+      - uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532 # v2.62.49
+        with:
+          tool: nextest@0.9.103
       - name: Configure rusty_v8 artifact overrides and verify checksums
         uses: ./.github/actions/setup-rusty-v8
         with:
@@ -43,11 +46,14 @@ jobs:
       - name: cargo fmt
         run: cargo fmt -- --config imports_granularity=Item --check
       - name: cargo clippy
-        run: cargo clippy --bin codex
-      - name: cargo test (lib)
+        run: cargo clippy --locked --bin codex
+      - name: Check release-only code
+        run: cargo check --locked --release --bin codex
+      - name: Project tests
         run: |
-          cargo test -p codex-core --lib
-          cargo test -p codex-cli --lib
+          just test -p codex-core --lib
+          just test -p codex-cli
+          just test -p codex-tui
 
   windows:
     name: Windows
@@ -71,11 +77,11 @@ jobs:
         with:
           workspaces: codex-rs
           prefix-key: fork-ci-windows
-      - name: cargo build
+      - name: Check Windows release build
         shell: bash
         run: |
           export LIBSQLITE3_FLAGS=SQLITE_DISABLE_INTRINSIC
-          cargo build --bin codex
+          cargo check --locked --release --bin codex
 
   required:
     name: Fork CI

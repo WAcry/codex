@@ -20,6 +20,10 @@
 
 原则本身若要改，先写 ADR，不要在同步时口头改口径。
 
+保持简单。默认维护者会按文档操作。LLM agent 很容易为假想风险叠加保护，这是本项目不接受的默认行为。只有已经发生的问题，或明确要求拦住的行为，才值得增加 gate、ruleset 和重复校验。
+
+代码采用进攻式编程。调用方违反约定就尽早报错，错误不要静默降级。契约已经写清时，直接依赖契约。
+
 ## 文件
 
 | 文件 | 用途 |
@@ -31,7 +35,7 @@
 | [backlog.md](backlog.md) | 还没写成 ADR 的想法 |
 | [scripts/](scripts/) | 禁用上游 Actions、发版时盖 workspace 版本 |
 
-ADR 写完并 Accepted 之后，正文不要改。只改 Status。计划中的事放 `backlog.md`，不要和已接受的决策混在一篇里。
+ADR 合进 `main` 后，正文不要改，只改 Status。PR 审查期间直接修正原 ADR，不为尚未落地的修正再开一篇。计划中的事放 `backlog.md`。
 
 已接受：
 
@@ -68,7 +72,7 @@ git fetch upstream
 
 - 版本：`{上游完整版本}.wa.{N}`，标签 `wa-v` 加版本，例如 `wa-v0.152.0-alpha.6.wa.1`
 - `main` 上 `codex-rs` workspace 版本保持 `0.0.0`
-- 推标签后由 `fork-release.yml` 编 Windows x64 和 Linux x64 GNU，挂到 GitHub Releases
+- 在 `origin/main` 的提交上推 annotated tag，由 `fork-release.yml` 构建 Windows x64 ZIP 和 Linux x64 GNU tar.gz，挂到 GitHub Releases
 - 不发 npm / R2 / WinGet，不签名
 
 ```
@@ -82,12 +86,16 @@ git push origin wa-v0.152.0-alpha.6.wa.1
 
 从 [Releases](https://github.com/WAcry/codex/releases) 下载：
 
-- Windows x64：`codex-x86_64-pc-windows-msvc.exe`，改名为 `codex.exe`
-- Linux x64：`codex-x86_64-unknown-linux-gnu`，改名为 `codex`，`chmod +x`
+- Windows x64：`codex-package-x86_64-pc-windows-msvc.zip`
+- Linux x64：`codex-package-x86_64-unknown-linux-gnu.tar.gz`（glibc 2.35 或更新）
 
-放到已在 PATH 里的目录。不要用官方 `install.sh`、`npm i -g @openai/codex` 或 Homebrew cask 来装这个 fork，那些会装 openai 的包。
+解压到固定目录，把包里的 `bin/` 加进 PATH。不要只复制 `codex`，同级的 `codex-resources/`、`codex-path/` 也要保留。不要用官方 `install.sh`、`npm i -g @openai/codex` 或 Homebrew cask 来装这个 fork，那些会装 openai 的包。
 
-TUI/CLI 不检查、不提示升级。换版本就再下一份覆盖。
+TUI/CLI 不检查、不提示升级。换版本就下载新包，整体替换旧目录。
+
+## 验证
+
+不要在本地运行测试，也不要为了本地测试安装额外依赖。把分支推到 GitHub，由 `fork-ci.yml` 跑 CI。发布包只在 `fork-release.yml` 中构建和验证。
 
 ## 跟上游同步
 
@@ -117,5 +125,7 @@ git merge upstream/main
 - 动代码前先看 `OVERLAY.md`、相关 ADR，以及本文「目标」「原则」。
 - 新代码优先走适配层，避免再增加 GPT 专用分支。
 - 新决策用 `adr/0000-template.md` 开篇，中文写。
+- 不要在本地跑测试。依赖远端 `fork-ci.yml`。
+- 不要主动增加 gate 或保护。默认人会遵守文档，违反契约时直接报错。
 - 不要改上游 `.github/workflows/` 里已有的 yml。fork 的 CI/发布只放 `fork-ci.yml` 和 `fork-release.yml`。
 - 上游新 workflow 出现在 Actions 里时，跑 `fork/scripts/disable-upstream-workflows.ps1`。

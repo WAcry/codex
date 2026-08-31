@@ -1,5 +1,5 @@
 # Fork-only GitHub Release for WAcry/codex.
-# Tag: wa-v{upstream-version}.wa.{N}  e.g. wa-v0.152.0-alpha.6.wa.1
+# Tag examples: wa-v0.152.0-wa.1, wa-v0.152.0-alpha.6.wa.1
 name: fork-release
 
 on:
@@ -19,9 +19,17 @@ jobs:
     if: github.repository == 'WAcry/codex'
     runs-on: ubuntu-24.04
     outputs:
+      make_latest: ${{ steps.parse.outputs.make_latest }}
+      prerelease: ${{ steps.parse.outputs.prerelease }}
+      upstream_base: ${{ steps.parse.outputs.upstream_base }}
+      upstream_version: ${{ steps.parse.outputs.upstream_version }}
       version: ${{ steps.parse.outputs.version }}
     steps:
-      - name: Validate wa-v tag
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Parse wa-v tag
         id: parse
         shell: bash
         run: |
@@ -32,107 +40,126 @@ jobs:
             exit 1
           fi
           version="${BASH_REMATCH[1]}"
-          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
-            echo "Version '${version}' is not a Cargo semver string" >&2
+          number='(0|[1-9][0-9]*)'
+          core="${number}\\.${number}\\.${number}"
+
+          if [[ "${version}" =~ ^${core}-wa\.[1-9][0-9]*$ ]]; then
+            upstream_version="${version%-wa.*}"
+            prerelease=false
+            make_latest=true
+          elif [[ "${version}" =~ ^${core}-(alpha(\.${number}){0,2}|beta(\.${number})?)\.wa\.[1-9][0-9]*$ ]]; then
+            upstream_version="${version%.wa.*}"
+            prerelease=true
+            make_latest=false
+          else
+            echo "Version '${version}' must be UPSTREAM_VERSION.wa.N with N >= 1" >&2
             exit 1
           fi
-          if [[ ! "${version}" =~ \.wa\.[0-9]+$ ]]; then
-            echo "Version '${version}' must end with .wa.N" >&2
-            exit 1
-          fi
+
+          git fetch --no-tags https://github.com/openai/codex.git main:refs/remotes/upstream/main
+          upstream_base="$(git merge-base HEAD refs/remotes/upstream/main)"
+
+          echo "make_latest=${make_latest}" >> "${GITHUB_OUTPUT}"
+          echo "prerelease=${prerelease}" >> "${GITHUB_OUTPUT}"
+          echo "upstream_base=${upstream_base}" >> "${GITHUB_OUTPUT}"
+          echo "upstream_version=${upstream_version}" >> "${GITHUB_OUTPUT}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
-          echo "Using fork version ${version}"
+          echo "Using fork version ${version} based on upstream ${upstream_version}"
 
   linux:
     needs: tag-check
     if: github.repository == 'WAcry/codex'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    defaults:
-      run:
-        working-directory: codex-rs
+    # Build against glibc 2.35 so the GNU artifact also runs on Ubuntu 22.04.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-ci
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
-      - name: Configure rusty_v8 artifact overrides and verify checksums
-        uses: ./.github/actions/setup-rusty-v8
         with:
-          target: x86_64-unknown-linux-gnu
+          targets: x86_64-unknown-linux-gnu
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: codex-rs
           prefix-key: fork-release-linux
+      - name: Install bwrap build dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends binutils libcap-dev pkg-config
       - name: Stamp workspace version
-        working-directory: ${{ github.workspace }}
         env:
           FORK_VERSION: ${{ needs.tag-check.outputs.version }}
         run: python3 fork/scripts/stamp-workspace-version.py
-      - name: cargo build
-        run: cargo build --release --bin codex
-      - name: Stage artifact
-        working-directory: ${{ github.workspace }}
+      - name: Build bwrap and export digest
         run: |
           set -euo pipefail
-          mkdir -p dist
-          src="${CARGO_TARGET_DIR}/release/codex"
-          test -f "${src}"
-          strip --strip-unneeded "${src}" || true
-          cp "${src}" dist/codex-x86_64-unknown-linux-gnu
-          chmod 0755 dist/codex-x86_64-unknown-linux-gnu
+          target=x86_64-unknown-linux-gnu
+          cargo build --manifest-path codex-rs/Cargo.toml --target "${target}" --release --bin bwrap
+          bwrap="${CARGO_TARGET_DIR}/${target}/release/bwrap"
+          strip --strip-debug --strip-unneeded "${bwrap}"
+          echo "CODEX_BWRAP_SHA256=$(sha256sum "${bwrap}" | awk '{print $1}')" >> "${GITHUB_ENV}"
+      - name: Build canonical package
+        env:
+          FORK_VERSION: ${{ needs.tag-check.outputs.version }}
+        run: |
+          set -euo pipefail
+          target=x86_64-unknown-linux-gnu
+          python3 scripts/build_codex_package.py \
+            --target "${target}" \
+            --package-version "${FORK_VERSION}" \
+            --package-dir "dist/codex-package-${target}" \
+            --archive-output "dist/codex-package-${target}.tar.gz" \
+            --cargo-profile release \
+            --bwrap-bin "${CARGO_TARGET_DIR}/${target}/release/bwrap"
+          "dist/codex-package-${target}/bin/codex" --version
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: linux-gnu-x64
-          path: dist/codex-x86_64-unknown-linux-gnu
+          path: dist/codex-package-x86_64-unknown-linux-gnu.tar.gz
           if-no-files-found: error
 
   windows:
     needs: tag-check
     if: github.repository == 'WAcry/codex'
     runs-on: windows-latest
-    timeout-minutes: 90
-    defaults:
-      run:
-        working-directory: codex-rs
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-ci
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
-      - name: Configure rusty_v8 artifact overrides and verify checksums
-        uses: ./.github/actions/setup-rusty-v8
         with:
-          target: x86_64-pc-windows-msvc
+          targets: x86_64-pc-windows-msvc
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: codex-rs
           prefix-key: fork-release-windows
       - name: Stamp workspace version
-        working-directory: ${{ github.workspace }}
         env:
           FORK_VERSION: ${{ needs.tag-check.outputs.version }}
         run: python fork/scripts/stamp-workspace-version.py
-      - name: cargo build
+      - name: Build canonical package
         shell: bash
-        run: |
-          export LIBSQLITE3_FLAGS=SQLITE_DISABLE_INTRINSIC
-          cargo build --release --bin codex
-      - name: Stage artifact
-        working-directory: ${{ github.workspace }}
-        shell: bash
+        env:
+          FORK_VERSION: ${{ needs.tag-check.outputs.version }}
+          LIBSQLITE3_FLAGS: SQLITE_DISABLE_INTRINSIC
         run: |
           set -euo pipefail
-          mkdir -p dist
-          src="${CARGO_TARGET_DIR}/release/codex.exe"
-          test -f "${src}"
-          cp "${src}" dist/codex-x86_64-pc-windows-msvc.exe
+          target=x86_64-pc-windows-msvc
+          python scripts/build_codex_package.py \
+            --target "${target}" \
+            --package-version "${FORK_VERSION}" \
+            --package-dir "dist/codex-package-${target}" \
+            --archive-output "dist/codex-package-${target}.zip" \
+            --cargo-profile release
+          "dist/codex-package-${target}/bin/codex.exe" --version
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: windows-msvc-x64
-          path: dist/codex-x86_64-pc-windows-msvc.exe
+          path: dist/codex-package-x86_64-pc-windows-msvc.zip
           if-no-files-found: error
 
   release:
@@ -163,11 +190,16 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          sha256sum codex-x86_64-unknown-linux-gnu codex-x86_64-pc-windows-msvc.exe > SHA256SUMS
+          sha256sum \
+            codex-package-x86_64-unknown-linux-gnu.tar.gz \
+            codex-package-x86_64-pc-windows-msvc.zip \
+            > SHA256SUMS
           cat SHA256SUMS
       - name: Release notes
         id: notes
         env:
+          UPSTREAM_BASE: ${{ needs.tag-check.outputs.upstream_base }}
+          UPSTREAM_VERSION: ${{ needs.tag-check.outputs.upstream_version }}
           VERSION: ${{ needs.tag-check.outputs.version }}
         run: |
           set -euo pipefail
@@ -178,8 +210,10 @@ jobs:
             echo
             echo "- commit: ${commit}"
             echo "- tag: ${GITHUB_REF_NAME}"
-            echo "- Linux: x86_64-unknown-linux-gnu (unsigned)"
-            echo "- Windows: x86_64-pc-windows-msvc (unsigned)"
+            echo "- upstream release: openai/codex rust-v${UPSTREAM_VERSION}"
+            echo "- upstream main base: openai/codex@${UPSTREAM_BASE}"
+            echo "- Linux package: x86_64-unknown-linux-gnu, glibc 2.35 baseline (unsigned)"
+            echo "- Windows package: x86_64-pc-windows-msvc (unsigned)"
           } > "${notes}"
           echo "path=${notes}" >> "${GITHUB_OUTPUT}"
       - uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
@@ -188,5 +222,5 @@ jobs:
           tag_name: ${{ github.ref_name }}
           body_path: ${{ steps.notes.outputs.path }}
           files: dist/**
-          make_latest: true
-          prerelease: ${{ contains(needs.tag-check.outputs.version, 'alpha') || contains(needs.tag-check.outputs.version, 'beta') }}
+          make_latest: ${{ needs.tag-check.outputs.make_latest }}
+          prerelease: ${{ needs.tag-check.outputs.prerelease }}
