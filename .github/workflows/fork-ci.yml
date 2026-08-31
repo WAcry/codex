@@ -52,7 +52,7 @@ jobs:
       - name: Project tests
         run: |
           just test -p codex-core --lib
-          just test -p codex-cli
+          just test -p codex-cli --bin codex
           just test -p codex-tui
 
   windows:
