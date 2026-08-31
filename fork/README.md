@@ -16,9 +16,9 @@
 
 当前的初心：让 Codex 能好好接多种 LLM，而不是只围绕 GPT / OpenAI 官方接口来写。
 
-查看 `origin/upstream` 或采用新的上游 Release 时，除了按 [OVERLAY.md](OVERLAY.md) 保住已有补丁，还要扫一眼上游新增的模型、鉴权、协议、provider 相关代码。如果它把行为写死在单一厂商上（硬编码模型名、只认一种 API、把 ChatGPT 登录当成唯一路径），即使我们还没做对应功能，也要开 ADR 评估：忽略、加适配，还是改一刀。原则和现有功能冲突时，优先保住原则，再决定功能要不要跟。
+查看 `origin/upstream` 或采用新的上游 Release 时，除了按 [OVERLAY.md](OVERLAY.md) 保住已有补丁，还要扫一眼上游新增的模型、鉴权、协议、provider 相关代码。如果它把行为写死在单一厂商上（硬编码模型名、只认一种 API、把 ChatGPT 登录当成唯一路径），先记到 `backlog.md`。决定处理时再修改现有 ADR，或为独立决策新建 ADR，并立即实现。原则和现有功能冲突时，优先保住原则，再决定功能要不要跟。
 
-原则本身若要改，先写 ADR，不要在同步时口头改口径。
+原则变化时直接修改对应 ADR。没有对应 ADR 的独立决策才新建一篇。
 
 保持简单。默认维护者会按文档操作。LLM agent 很容易为假想风险叠加保护，这是本项目不接受的默认行为。只有已经发生的问题，或明确要求拦住的行为，才值得增加 gate、ruleset 和重复校验。
 
@@ -35,9 +35,9 @@
 | [backlog.md](backlog.md) | 还没写成 ADR 的想法 |
 | [scripts/](scripts/) | 禁用上游 Actions、发版时盖 workspace 版本 |
 
-ADR 合进 `main` 后，正文不要改，只改 Status。PR 审查期间直接修正原 ADR，不为尚未落地的修正再开一篇。计划中的事放 `backlog.md`。
+ADR 只描述当前决策，历史由 Git 保存。ADR 不设状态字段。计划中的事只放 `backlog.md`；开始写 ADR 就表示决定已经生效，下一步立即实现。决策变化时直接改原 ADR。决策失效时删除 ADR、相关补丁和 overlay 条目。
 
-已接受：
+当前 ADR：
 
 - [0001 版本与发布](adr/0001-fork-版本与发布.md)
 - [0002 main 与 CI](adr/0002-main-分支与持续集成.md)
@@ -68,8 +68,8 @@ git fetch upstream
 ## 改代码时
 
 1. 能新建文件就新建，少改热点文件。
-2. 先写或更新 ADR（`fork/adr/NNNN-标题.md`），编号四位、递增。
-3. 在 `OVERLAY.md` 加一行：ADR 编号、路径、冲突时的策略、是否还需要。
+2. 准备立即实现时，从 `backlog.md` 删除对应想法，再写或更新 ADR（`fork/adr/NNNN-标题.md`）。独立的新决策才使用下一个四位编号。
+3. 在 `OVERLAY.md` 加一行：ADR 编号、路径、冲突时的策略。
 4. commit message 带 `Fork-ADR: NNNN`，方便以后 `git log --grep=Fork-ADR`。
 
 ## 版本与发布
@@ -130,10 +130,10 @@ git push --set-upstream origin HEAD
 重新应用完成后：
 
 1. 打开 `OVERLAY.md`，每一行看一遍：这块补丁还要不要。
-2. 对照上面的原则，看上游这轮有没有把多模型支持收窄。有的话记到 `backlog.md` 或直接开 ADR，不要合进去就不管了。
-3. 上游已经合入等价功能的，删掉我们的补丁，把对应 ADR 标成 `Dropped` 或 `Superseded`，并写上上游 PR/issue。
+2. 对照上面的原则，看上游这轮有没有把多模型支持收窄。暂不处理就记到 `backlog.md`；决定处理就更新现有 ADR，或为独立决策新建 ADR 并立即实现。
+3. 上游已经合入等价功能的，删除重复补丁和 overlay 条目。ADR 还有现行内容就直接修改，否则删除。
 4. 跑各 ADR 里的「如何确认」；没写测试的，按手册检查点做一遍。
-5. 改过 overlay 或 ADR 状态就一并提交。
+5. 改过 overlay 或 ADR 就一并提交。
 
 同步把行为弄丢，多半是 overlay 没更新，或 ADR 里没有可执行的确认步骤。
 
@@ -145,7 +145,7 @@ git push --set-upstream origin HEAD
 - 不要为了 fork 去改上游 `docs/`。
 - 动代码前先看 `OVERLAY.md`、相关 ADR，以及本文「目标」「原则」。
 - 新代码优先走适配层，避免再增加 GPT 专用分支。
-- 新决策用 `adr/0000-template.md` 开篇，中文写。
+- 计划只放 `backlog.md`。开始写 ADR 就要立即实现；变化直接改原 ADR，失效就删除。
 - 不要在本地跑测试。依赖远端 `fork-ci.yml`。
 - 不要主动增加 gate 或保护。默认人会遵守文档，违反契约时直接报错。
 - 不要改上游 `.github/workflows/` 里已有的 yml。fork 专属 workflow 只放 `fork-ci.yml`、`fork-release.yml` 和 `fork-sync-upstream.yml`。

@@ -1,17 +1,11 @@
 # NNNN. 标题
 
-- **Status：** Proposed | Accepted | Superseded | Dropped
 - **日期：** YYYY-MM-DD
 - **Fork-ADR：** NNNN
 
-Status 说明：
+ADR 只记录当前生效的决策。还没决定实施的想法留在 [backlog.md](../backlog.md)。开始写 ADR 就要在同一项工作里落地，不写待批准或暂不实施的 ADR。
 
-- Proposed：还没合进我们的分支
-- Accepted：已经按此改代码
-- Superseded：被另一篇 ADR 替代（写明编号）
-- Dropped：不再做，或上游已经有等价实现（写明 PR/issue）
-
-Accepted 之后不要改 Context / Decision 正文。后来的变化写新 ADR，或只改本页 Status。
+决策变化时直接修改原 ADR。决策失效时删除 ADR、对应补丁和 [OVERLAY.md](../OVERLAY.md) 中的条目。Git 历史保留旧内容，ADR 不设状态字段。
 
 ## Context
 
@@ -47,7 +41,7 @@ just test -p ...
 
 ## Upstream
 
-相关上游 issue/PR。一旦上游合入等价功能，Status 改为 Dropped 或 Superseded，并更新 [OVERLAY.md](../OVERLAY.md)。
+相关上游 issue/PR。上游合入等价功能后，删除重复补丁；ADR 仍有现行内容就直接修改，否则删除，并同步清理 [OVERLAY.md](../OVERLAY.md)。
 
 ## 后果
 
