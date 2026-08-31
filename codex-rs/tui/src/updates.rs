@@ -24,8 +24,14 @@ use crate::version::CODEX_CLI_VERSION;
 
 pub(crate) use crate::updates_cache::dismiss_version;
 
+/// WAcry fork: do not probe openai/codex for updates. See fork/adr/0003-安装与升级检测.md.
+const FORK_DISABLE_BUILTIN_UPDATES: bool = true;
+
 pub fn get_upgrade_version(config: &Config) -> Option<String> {
-    if !config.check_for_update_on_startup || is_source_build_version(CODEX_CLI_VERSION) {
+    if FORK_DISABLE_BUILTIN_UPDATES
+        || !config.check_for_update_on_startup
+        || is_source_build_version(CODEX_CLI_VERSION)
+    {
         return None;
     }
 

@@ -37,6 +37,7 @@ ADR 写完并 Accepted 之后，正文不要改。只改 Status。计划中的�
 
 - [0001 版本与发布](adr/0001-fork-版本与发布.md)
 - [0002 main 与 CI](adr/0002-main-分支与持续集成.md)
+- [0003 安装与升级检测](adr/0003-安装与升级检测.md)
 
 ## Git remote
 
@@ -74,6 +75,19 @@ git fetch upstream
 git tag -a wa-v0.152.0-alpha.6.wa.1 -m "wa 0.152.0-alpha.6.wa.1"
 git push origin wa-v0.152.0-alpha.6.wa.1
 ```
+
+## 安装
+
+规则见 [ADR 0003](adr/0003-安装与升级检测.md)。
+
+从 [Releases](https://github.com/WAcry/codex/releases) 下载：
+
+- Windows x64：`codex-x86_64-pc-windows-msvc.exe`，改名为 `codex.exe`
+- Linux x64：`codex-x86_64-unknown-linux-gnu`，改名为 `codex`，`chmod +x`
+
+放到已在 PATH 里的目录。不要用官方 `install.sh`、`npm i -g @openai/codex` 或 Homebrew cask 来装这个 fork，那些会装 openai 的包。
+
+TUI/CLI 不检查、不提示升级。换版本就再下一份覆盖。
 
 ## 跟上游同步
 
