@@ -10,20 +10,20 @@ def main() -> None:
     base_version = os.environ.get("BASE_VERSION", "").strip()
     target_version = os.environ.get("TARGET_VERSION", "").strip()
     if not base_version:
-        raise SystemExit("BASE_VERSION 为空")
+        raise SystemExit("BASE_VERSION is empty")
     if not target_version:
-        raise SystemExit("TARGET_VERSION 为空")
+        raise SystemExit("TARGET_VERSION is empty")
 
     cargo_toml = Path("codex-rs/Cargo.toml")
     text = cargo_toml.read_text(encoding="utf-8")
     needle = f'version = "{base_version}"'
     if needle not in text:
-        raise SystemExit(f"{cargo_toml} 中没有 {needle}")
+        raise SystemExit(f"{cargo_toml} does not contain {needle}")
     cargo_toml.write_text(
         text.replace(needle, f'version = "{target_version}"', 1),
         encoding="utf-8",
     )
-    print(f"已把 {cargo_toml} 的版本改为 {target_version}")
+    print(f"updated {cargo_toml} workspace version to {target_version}")
 
 
 if __name__ == "__main__":
