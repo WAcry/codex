@@ -42,6 +42,7 @@ ADR 只描述当前决策，历史由 Git 保存。ADR 不设状态字段。计�
 - [0001 版本与发布](adr/0001-fork-版本与发布.md)
 - [0002 main 与 CI](adr/0002-main-分支与持续集成.md)
 - [0003 安装与升级检测](adr/0003-安装与升级检测.md)
+- [0004 fork 历史 item ID](adr/0004-fork-历史-item-ID.md)
 
 ## Git remote
 

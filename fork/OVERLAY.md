@@ -24,5 +24,8 @@
 | 0002 | `fork/scripts/disable-upstream-workflows.ps1` | 新文件（上游无） | 远端禁用上游 workflow |
 | 0003 | `codex-rs/tui/src/updates.rs` | 保留我们的 hunk | 关闭内置升级探测 |
 | 0003 | `codex-rs/cli/src/doctor/updates.rs` | 保留我们的 hunk | doctor 不打官方 latest |
+| 0004 | `codex-rs/core/src/agent/control/spawn.rs` | 保留我们的 hunk | 清空 fork 继承项的父线程 ID；上游修复 #33329 后清理 |
+| 0004 | `codex-rs/core/src/agent/control_tests.rs`、`codex-rs/core/tests/suite/subagent_notifications.rs` | 保留我们的 hunk | fork item ID 回归断言 |
+| 0004 | `.github/workflows/fork-ci.yml` | 保留我们的 hunk | 运行对应的子代理集成测试 |
 
 同步核对时从上一行往下走。不要凭记忆决定留哪边。
