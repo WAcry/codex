@@ -35,6 +35,8 @@ const MAX_VERSION_RESPONSE_BYTES: usize = 1024 * 1024;
 const VERSION_FILE_NAME: &str = "version.json";
 const GITHUB_LATEST_RELEASE_URL: &str = "https://api.github.com/repos/openai/codex/releases/latest";
 const HOMEBREW_CASK_API_URL: &str = "https://formulae.brew.sh/api/cask/codex.json";
+// WAcry fork: do not probe official update endpoints. See fork ADR 0003.
+const FORK_DISABLE_BUILTIN_UPDATES: bool = true;
 #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
 const DESKTOP_UPDATE_URL: &str = "https://persistent.oaistatic.com/codex-app-prod/appcast-x64.xml";
 #[cfg(all(target_os = "macos", not(target_arch = "x86_64")))]
@@ -51,6 +53,15 @@ const DESKTOP_UPDATE_URL: &str =
 /// warning instead of failing doctor outright; update freshness is useful
 /// support context but should not mask more direct install/config failures.
 pub(super) async fn updates_check(config: &Config) -> DoctorCheck {
+    if FORK_DISABLE_BUILTIN_UPDATES {
+        return DoctorCheck::new(
+            "updates.status",
+            "updates",
+            CheckStatus::Ok,
+            "built-in update checks are disabled for the WAcry fork",
+        );
+    }
+
     let current_exe = std::env::current_exe().ok();
     let install_context = doctor_install_context(current_exe.as_deref());
     let mut details = vec![
@@ -99,6 +110,10 @@ pub(super) async fn append_desktop_update(
     config: Option<&Config>,
     application: &InstalledApp,
 ) {
+    if FORK_DISABLE_BUILTIN_UPDATES {
+        return;
+    }
+
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     #[cfg(target_os = "macos")]
     if let Some(home) = std::env::var_os("HOME").map(PathBuf::from)

@@ -1,0 +1,28 @@
+# Keep WAcry/codex's upstream branch aligned with openai/codex main.
+name: fork-sync-upstream
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: fork-sync-upstream
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.repository == 'WAcry/codex'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: upstream
+          fetch-depth: 0
+      - name: Fast-forward upstream branch
+        run: |
+          git fetch --no-tags https://github.com/openai/codex.git main
+          git push origin FETCH_HEAD:refs/heads/upstream
