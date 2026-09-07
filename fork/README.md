@@ -63,7 +63,7 @@ git fetch upstream
 - 远端分支 `origin/upstream` 镜像 `openai/codex main`
 - 远端分支 `origin/main` 只采用已经发布的 `rust-v*` tag，包括 alpha / beta，再叠加 fork overlay
 
-`fork-sync-upstream.yml` 每天 fast-forward `origin/upstream`，也可在 Actions 手动触发。`main` 不直接合入 `origin/upstream`，所有改动和发布基线同步都走 PR，CI 绿了之后 squash。规则见 [ADR 0002](adr/0002-main-分支与持续集成.md)。
+`fork-sync-upstream.yml` 每天 fast-forward `origin/upstream`，也可在 Actions 手动触发。`main` 不直接合入 `origin/upstream`。普通改动走 PR 并 squash；发布基线同步先用临时 PR 跑 CI，再把 rebased 分支更新到 `main`。规则见 [ADR 0002](adr/0002-main-分支与持续集成.md)。
 
 ## 改代码时
 
@@ -101,7 +101,7 @@ TUI/CLI 不检查、不提示升级。换版本就下载新包，整体替换旧
 
 ## 验证
 
-不要在本地运行测试，也不要为了本地测试安装额外依赖。把分支推到 GitHub，由 `fork-ci.yml` 跑 CI。发布包只在 `fork-release.yml` 中构建和验证。
+不要在本地运行测试，也不要为了本地测试安装额外依赖。把分支推到 GitHub，由 `fork-ci.yml` 跑 CI。Release commit 的真实 workspace 版本会在 CI 临时 checkout 中恢复为 `0.0.0`，以匹配上游锁文件和 snapshots。发布包只在 `fork-release.yml` 中构建和验证。
 
 ## 跟上游同步
 
@@ -112,20 +112,29 @@ git fetch upstream main
 git push origin upstream/main:upstream
 ```
 
-不要因为 `origin/upstream` 有新 commit 就更新 `main`。先等上游发布要采用的 `rust-v*` tag，再从当前 `main` 建同步分支：
+不要因为 `origin/upstream` 有新 commit 就更新 `main`。先等上游发布要采用的 `rust-v*` tag。`main` 采用 rebase，不 merge 上游开发分支：
 
-```
+```powershell
 git fetch upstream --tags
 git fetch origin main
-git switch --create sync/rust-v0.152.0-alpha.6 origin/main
-git restore --source=rust-v0.152.0-alpha.6 --staged --worktree -- .
-# 提交上游 release tree，再从 origin/main 取回 OVERLAY 中的 fork 专属文件，
-# 并逐项重新应用上游文件里的小 hunk
+$oldTag = "rust-v<当前基线>"
+$newTag = "rust-v<目标版本>"
+git switch --create "sync/$newTag" origin/main
+git rebase --onto $newTag $oldTag
+# 冲突只按 OVERLAY 重新应用 fork 补丁
 git push --set-upstream origin HEAD
-# 开 PR 进 main
+# 开 PR 进 main，只做审查和 CI
 ```
 
-同步分支必须包含当前 `main`。只从 release tag 分叉时，GitHub 三方合并会保留 `main` 独有的未发布代码，不能达到回退效果。PR 的 tree diff 必须同时做到：采用目标 release tag、删除 tag 之后尚未发布的上游代码、保留 overlay。
+`fork-ci.yml` 会直接 checkout 同步分支的 head，不测试 GitHub 生成的临时 merge commit。PR 的 `Fork CI` 全绿后，记录当前远端 `main` SHA，临时停用 `Protect main` ruleset，再更新 `main`：
+
+```powershell
+$expected = git rev-parse origin/main
+git push "--force-with-lease=refs/heads/main:$expected" origin HEAD:main
+# 立即恢复 ruleset，然后关闭 PR、删除临时分支
+```
+
+不要点击同步 PR 的 merge。该分支从新 release tag 开始，和旧 `main` 分叉；三方合并会把旧基线独有的代码重新带回来。rebase 后的 `main` 始终是“上游 release commit + fork commits”的线性历史。
 
 重新应用完成后：
 
@@ -149,4 +158,5 @@ git push --set-upstream origin HEAD
 - 不要在本地跑测试。依赖远端 `fork-ci.yml`。
 - 不要主动增加 gate 或保护。默认人会遵守文档，违反契约时直接报错。
 - 不要改上游 `.github/workflows/` 里已有的 yml。fork 专属 workflow 只放 `fork-ci.yml`、`fork-release.yml` 和 `fork-sync-upstream.yml`。
+- 发布同步只 rebase fork commits，不 merge `origin/upstream`。
 - 上游新 workflow 出现在 Actions 里时，跑 `fork/scripts/disable-upstream-workflows.ps1`。

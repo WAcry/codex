@@ -18,7 +18,7 @@
 | ADR | 路径 | 策略 | 备注 |
 |-----|------|------|------|
 | 0001 | `.github/workflows/fork-release.yml` | 新文件（上游无） | 2026-08-31 |
-| 0001 | `fork/scripts/stamp-workspace-version.py` | 新文件（上游无） | 发布时把上游版本改成 fork 版本，不提交 |
+| 0001 | `fork/scripts/stamp-workspace-version.py` | 新文件（上游无） | CI 恢复 `0.0.0`，发布时改成 fork 版本；都不提交 |
 | 0002 | `.github/workflows/fork-ci.yml` | 新文件（上游无） | required 名 Fork CI |
 | 0002 | `.github/workflows/fork-sync-upstream.yml` | 新文件（上游无） | 每天 fast-forward `origin/upstream` |
 | 0002 | `fork/scripts/disable-upstream-workflows.ps1` | 新文件（上游无） | 远端禁用上游 workflow |

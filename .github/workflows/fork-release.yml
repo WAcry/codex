@@ -93,7 +93,7 @@ jobs:
       - name: Stamp workspace version
         env:
           BASE_VERSION: ${{ needs.tag-check.outputs.upstream_version }}
-          FORK_VERSION: ${{ needs.tag-check.outputs.version }}
+          TARGET_VERSION: ${{ needs.tag-check.outputs.version }}
         run: python3 fork/scripts/stamp-workspace-version.py
       - name: Build bwrap and export digest
         run: |
@@ -143,7 +143,7 @@ jobs:
       - name: Stamp workspace version
         env:
           BASE_VERSION: ${{ needs.tag-check.outputs.upstream_version }}
-          FORK_VERSION: ${{ needs.tag-check.outputs.version }}
+          TARGET_VERSION: ${{ needs.tag-check.outputs.version }}
         run: python fork/scripts/stamp-workspace-version.py
       - name: Build canonical package
         shell: bash

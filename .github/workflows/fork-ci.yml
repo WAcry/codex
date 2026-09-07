@@ -28,6 +28,15 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Normalize workspace version for upstream tests
+        working-directory: .
+        env:
+          TARGET_VERSION: 0.0.0
+        run: |
+          BASE_VERSION="$(python3 -c 'import tomllib; print(tomllib.load(open("codex-rs/Cargo.toml", "rb"))["workspace"]["package"]["version"])')"
+          export BASE_VERSION
+          python3 fork/scripts/stamp-workspace-version.py
       - uses: ./.github/actions/setup-ci
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
@@ -46,9 +55,9 @@ jobs:
       - name: cargo fmt
         run: cargo fmt -- --config imports_granularity=Item --check
       - name: cargo clippy
-        run: cargo clippy --bin codex
+        run: cargo clippy --locked --bin codex
       - name: Check release-only code
-        run: cargo check --release --bin codex
+        run: cargo check --locked --release --bin codex
       - name: Project tests
         run: |
           just test -p codex-core --lib
@@ -67,6 +76,18 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Normalize workspace version for upstream tests
+        working-directory: .
+        shell: pwsh
+        env:
+          TARGET_VERSION: 0.0.0
+        run: |
+          $env:BASE_VERSION = python -c 'import tomllib; print(tomllib.load(open("codex-rs/Cargo.toml", "rb"))["workspace"]["package"]["version"])'
+          if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+          }
+          python fork/scripts/stamp-workspace-version.py
       - uses: ./.github/actions/setup-ci
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
       - name: Configure rusty_v8 artifact overrides and verify checksums
@@ -81,7 +102,7 @@ jobs:
         shell: bash
         run: |
           export LIBSQLITE3_FLAGS=SQLITE_DISABLE_INTRINSIC
-          cargo check --release --bin codex
+          cargo check --locked --release --bin codex
 
   required:
     name: Fork CI
@@ -94,6 +115,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Require successful dependencies
         env:
           NEEDS: ${{ toJSON(needs) }}
