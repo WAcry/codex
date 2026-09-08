@@ -42,6 +42,7 @@ ADR 只描述当前决策，历史由 Git 保存。ADR 不设状态字段。计�
 - [0001 版本与发布](adr/0001-fork-版本与发布.md)
 - [0002 main 与 CI](adr/0002-main-分支与持续集成.md)
 - [0003 安装与升级检测](adr/0003-安装与升级检测.md)
+- [0004 fork 历史 item ID](adr/0004-fork-历史-item-ID.md)
 
 ## Git remote
 
@@ -101,7 +102,11 @@ TUI/CLI 不检查、不提示升级。换版本就下载新包，整体替换旧
 
 ## 验证
 
-不要在本地运行测试，也不要为了本地测试安装额外依赖。把分支推到 GitHub，由 `fork-ci.yml` 跑 CI。Release commit 的真实 workspace 版本会在 CI 临时 checkout 中恢复为 `0.0.0`，以匹配上游锁文件和 snapshots。发布包只在 `fork-release.yml` 中构建和验证。
+本节的 fork 验证规则优先于上游 `AGENTS.md` 中关于测试执行范围与时机的要求。
+
+本 fork 通常只做小补丁，验证按阶段分配：本地只做格式与静态检查；PR 由 `fork-ci.yml` 做格式、Clippy 和 Linux / Windows release 编译检查；合并后的 `main` 再执行完整 fork 测试集，范围见 [ADR 0002](adr/0002-main-分支与持续集成.md)。手动重跑测试也选择 `main`。
+
+Release commit 的真实 workspace 版本会在 CI 临时 checkout 中恢复为 `0.0.0`，以匹配上游锁文件和 snapshots。发布包只在 `fork-release.yml` 中构建和验证。
 
 ## 跟上游同步
 
@@ -155,7 +160,7 @@ git push "--force-with-lease=refs/heads/main:$expected" origin HEAD:main
 - 动代码前先看 `OVERLAY.md`、相关 ADR，以及本文「目标」「原则」。
 - 新代码优先走适配层，避免再增加 GPT 专用分支。
 - 计划只放 `backlog.md`。开始写 ADR，决策就立即生效；变化直接改原 ADR，失效就删除。
-- 不要在本地跑测试。依赖远端 `fork-ci.yml`。
+- 验证按本文「验证」执行。
 - 不要主动增加 gate 或保护。默认人会遵守文档，违反契约时直接报错。
 - 不要改上游 `.github/workflows/` 里已有的 yml。fork 专属 workflow 只放 `fork-ci.yml`、`fork-release.yml` 和 `fork-sync-upstream.yml`。
 - 发布同步只 rebase fork commits，不 merge `origin/upstream`。

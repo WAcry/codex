@@ -947,6 +947,9 @@ impl AgentControl {
                     .inherited_user_message = true;
             }
             let response_item = &mut envelope.item;
+            // Forked history can omit reasoning required by the parent's stored item IDs.
+            // Replay retained content without those IDs: https://github.com/openai/codex/issues/33329.
+            response_item.set_id(/*new_id*/ None);
             if matches!(response_item, ResponseItem::AgentMessage { .. }) {
                 return false;
             }

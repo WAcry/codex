@@ -36,6 +36,7 @@ use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_completed_with_tokens;
 use core_test_support::responses::ev_function_call;
 use core_test_support::responses::ev_function_call_with_namespace;
+use core_test_support::responses::ev_reasoning_item;
 use core_test_support::responses::ev_response_created;
 use core_test_support::responses::ev_tool_search_call;
 use core_test_support::responses::mount_response_once_match;
@@ -1390,12 +1391,15 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
+    let mut seed_answer = ev_assistant_message("msg_parent_answer", "seeded");
+    seed_answer["item"]["phase"] = json!("final_answer");
     let seed_turn = mount_sse_once_match(
         &server,
         |req: &wiremock::Request| body_contains(req, TURN_0_FORK_PROMPT),
         sse(vec![
             ev_response_created("resp-seed-1"),
-            ev_assistant_message("msg-seed-1", "seeded"),
+            ev_reasoning_item("rs_parent_reasoning", &["seed reasoning"], &[]),
+            seed_answer,
             ev_completed("resp-seed-1"),
         ]),
     )
@@ -1579,7 +1583,7 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
     if matches!(selection, FullHistoryV2ModelSelection::WorldStateIdentity) {
         builder = builder.with_history_mode(ThreadHistoryMode::Paginated);
     }
-    let test = builder.build(&server).await?;
+    let test = builder.build_with_auto_env(&server).await?;
     if matches!(selection, FullHistoryV2ModelSelection::WorldStateIdentity) {
         test.codex.submit(Op::Compact).await?;
         wait_for_event(&test.codex, |event| {
@@ -1642,6 +1646,28 @@ async fn spawned_full_history_v2_child_uses_model_precedence_without_dropping_co
 
     let child_request = wait_for_request_with_model(&child_request_log, expected_model).await?;
     assert!(child_request.body_contains_text(TURN_0_FORK_PROMPT));
+    let mut parent_answer = parent_request
+        .inputs_of_type("message")
+        .into_iter()
+        .find(|item| item["id"] == "msg_parent_answer")
+        .expect("parent request should retain the server's answer ID");
+    let mut child_answer = child_request
+        .inputs_of_type("message")
+        .into_iter()
+        .find(|item| item["content"] == parent_answer["content"])
+        .expect("child request should retain the parent answer");
+    assert_ne!(child_answer["id"], parent_answer["id"]);
+    parent_answer.as_object_mut().unwrap().remove("id");
+    child_answer.as_object_mut().unwrap().remove("id");
+    assert_eq!(child_answer, parent_answer);
+    assert_eq!(
+        parent_request.inputs_of_type("reasoning")[0]["id"],
+        json!("rs_parent_reasoning")
+    );
+    assert_eq!(
+        child_request.inputs_of_type("reasoning"),
+        Vec::<Value>::new()
+    );
     let misaligned_child_messages = child_request
         .inputs_of_type("message")
         .into_iter()

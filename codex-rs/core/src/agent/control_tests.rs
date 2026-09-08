@@ -2005,10 +2005,12 @@ async fn spawn_agent_fork_strips_parent_usage_hints_from_compacted_history(
         "compacted parent delegated task".to_string(),
         /*trigger_turn*/ true,
     );
+    let parent_summary_id = ResponseItemId::with_suffix("msg", "parent-summary");
+    let parent_developer_id = ResponseItemId::with_suffix("msg", "parent-developer");
     let replacement_history = vec![
         ContextualUserFragment::into(crate::context::GuardianApprovedAction::new("parent-private-release".to_owned())),
         ResponseItem::Message {
-            id: None,
+            id: Some(parent_summary_id.clone()),
             role: "user".to_string(),
             content: vec![ContentItem::InputText {
                 text: "compacted parent summary".to_string(),
@@ -2030,7 +2032,7 @@ async fn spawn_agent_fork_strips_parent_usage_hints_from_compacted_history(
             internal_chat_message_metadata_passthrough: None,
         },
         ResponseItem::Message {
-            id: None,
+            id: Some(parent_developer_id.clone()),
             role: "developer".to_string(),
             content: vec![
                 ContentItem::InputText {
@@ -2146,6 +2148,12 @@ async fn spawn_agent_fork_strips_parent_usage_hints_from_compacted_history(
     assert!(
         history_contains_text(history.raw_items(), "compacted parent summary"),
         "forked child history should retain compacted non-hint content"
+    );
+    assert!(
+        history.raw_items().all(|item| {
+            item.id() != Some(&parent_summary_id) && item.id() != Some(&parent_developer_id)
+        }),
+        "compacted fork history should discard parent user and developer item IDs"
     );
     assert!(
         !history_contains_text(history.raw_items(), "Catalog parent root guidance."),
@@ -2651,8 +2659,11 @@ async fn spawn_agent_fork_last_n_turns_keeps_only_recent_turns() {
             &[triggered_communication.to_response_input_item().into()],
         )
         .await;
+    let parent_task_id = ResponseItemId::with_suffix("msg", "parent-task");
+    let mut parent_task = user_message("current parent task");
+    parent_task.set_id(Some(parent_task_id.clone()));
     parent_thread
-        .inject_response_items(vec![user_message("current parent task")])
+        .inject_response_items(vec![parent_task])
         .await
         .expect("inject current parent task");
     let spawn_turn_context = parent_thread.session.new_default_turn().await;
@@ -2724,6 +2735,12 @@ async fn spawn_agent_fork_last_n_turns_keeps_only_recent_turns() {
     assert!(
         history_contains_text(history.raw_items(), "current parent task"),
         "forked child history should keep the parent user message from the requested last-N turn window"
+    );
+    assert!(
+        history
+            .raw_items()
+            .all(|item| item.id() != Some(&parent_task_id)),
+        "last-N fork history should discard the retained parent item ID"
     );
     assert!(
         child_thread
