@@ -1,4 +1,4 @@
-# Fork-only merge gate for WAcry/codex. Do not use as an upstream template.
+# Fork-only PR checks and post-merge tests for WAcry/codex.
 # Required check name (ruleset): "Fork CI"
 name: fork-ci
 
@@ -42,6 +42,7 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532 # v2.62.49
+        if: github.ref == 'refs/heads/main'
         with:
           tool: nextest@0.9.103
       - name: Configure rusty_v8 artifact overrides and verify checksums
@@ -58,7 +59,8 @@ jobs:
         run: cargo clippy --locked --bin codex
       - name: Check release-only code
         run: cargo check --locked --release --bin codex
-      - name: Project tests
+      - name: Fork test suite
+        if: github.ref == 'refs/heads/main'
         run: |
           just test -p codex-core --lib
           just test -p codex-core --test all spawned_full_history_v2_child_uses_model_precedence_without_dropping_context
