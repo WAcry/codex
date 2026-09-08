@@ -20,11 +20,6 @@ fn freeform_tool_deferral_matches_function_tool_wire_shape() {
     let mut expected_wire_shape = json!({
         "name": "apply_patch",
         "description": "Apply a patch",
-        "format": {
-            "type": "grammar",
-            "syntax": "lark",
-            "definition": "start: \"patch\"",
-        },
     });
 
     let mut tool: FreeformTool = serde_json::from_value(expected_wire_shape.clone())

@@ -33,5 +33,9 @@
 | 0005 | `codex-rs/core/src/tools/handlers/multi_agents{_spec,}_tests.rs`、`codex-rs/core/src/tools/spec_plan_tests.rs`、`codex-rs/core/tests/suite/subagent_notifications.rs` | 保留我们的 hunk | 更新既有 schema 与消息投递测试 |
 | 0005 | `codex-rs/ext/history-notes/src/{tools,backend,backend_tests}.rs` | 保留我们的 hunk | history/notes 参数明文透传 |
 | 0005 | `.github/workflows/fork-ci.yml` | 保留我们的 hunk | 合并后运行明文参数集成测试 |
+| 0006 | `codex-rs/core/src/tools/handlers/apply_patch_spec.rs`、`codex-rs/core/src/tools/code_mode/execute_spec.rs` | 保留我们的 hunk | 完整 Lark 语法写入工具描述 |
+| 0006 | `codex-rs/tools/src/{responses_api,lib,tool_search}.rs` | 保留我们的 hunk | 精简自由文本工具定义与搜索文本 |
+| 0006 | `codex-rs/tools/src/{responses_api,tool_search,tool_spec,code_mode}_tests.rs`、`codex-rs/core/src/client_tests.rs`、`codex-rs/core/src/tools/{spec_plan_tests.rs,handlers/apply_patch_spec_tests.rs}` | 保留我们的 hunk | 更新既有工具定义与序列化测试 |
+| 0006 | `codex-rs/core/tests/suite/{code_mode,search_tool}.rs`、`.github/workflows/fork-ci.yml` | 保留我们的 hunk | 合并后验证语法描述传递与调用 |
 
 同步核对时从上一行往下走。不要凭记忆决定留哪边。

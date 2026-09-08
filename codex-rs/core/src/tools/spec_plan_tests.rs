@@ -509,7 +509,7 @@ fn has_windows_shell_guidance(spec: &ToolSpec) -> bool {
 fn apply_patch_accepts_environment_id(spec: &ToolSpec) -> bool {
     match spec {
         ToolSpec::Freeform(tool) if tool.name == "apply_patch" => {
-            tool.format.definition.contains("Environment ID")
+            tool.description.contains("Environment ID")
         }
         _ => false,
     }

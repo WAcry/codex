@@ -100,7 +100,6 @@ fn default_tool_search_text(spec: &ToolSpec) -> String {
                     ResponsesApiNamespaceTool::Custom(tool) => {
                         push_search_part(&mut parts, tool.name.clone());
                         push_search_part(&mut parts, tool.description.clone());
-                        push_search_part(&mut parts, tool.format.syntax.clone());
                     }
                 }
             }
@@ -114,7 +113,6 @@ fn default_tool_search_text(spec: &ToolSpec) -> String {
         ToolSpec::Freeform(tool) => {
             push_search_part(&mut parts, tool.name.clone());
             push_search_part(&mut parts, tool.description.clone());
-            push_search_part(&mut parts, tool.format.syntax.clone());
         }
     }
 

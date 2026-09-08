@@ -63,6 +63,10 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           just test -p codex-core --lib
+          just test -p codex-tools --lib
+          just test -p codex-core --test all code_mode_can_apply_patch_via_nested_tool
+          just test -p codex-core --test all code_mode_exposes_and_dispatches_namespaced_custom_tools
+          just test -p codex-core --test all tool_search_returns_deferred_custom_tool_and_routes_follow_up_call
           just test -p codex-core --test all spawned_full_history_v2_child_uses_model_precedence_without_dropping_context
           just test -p codex-core --test all multi_agent_v2_spawn_sends_agent_message_to_child
           just test -p codex-history-notes-extension --test history_notes_extension installed_extension_exposes_and_invokes_history_notes_tools
