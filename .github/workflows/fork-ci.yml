@@ -59,6 +59,9 @@ jobs:
         run: cargo clippy --locked --bin codex
       - name: Check release-only code
         run: cargo check --locked --release --bin codex
+      - name: Build Code Mode test host
+        if: github.ref == 'refs/heads/main'
+        run: cargo build --locked -p codex-code-mode-host --bin codex-code-mode-host
       - name: Fork test suite
         if: github.ref == 'refs/heads/main'
         run: |
