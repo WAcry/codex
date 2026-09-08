@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   sync:
@@ -22,6 +22,8 @@ jobs:
         with:
           ref: upstream
           fetch-depth: 0
+          # Requires Contents and Workflows write permissions; see ADR 0002.
+          token: ${{ secrets.FORK_SYNC_TOKEN }}
       - name: Fast-forward upstream branch
         run: |
           git fetch --no-tags https://github.com/openai/codex.git main
