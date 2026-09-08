@@ -974,7 +974,7 @@ async fn multi_agent_v2_spawn_returns_path_and_send_message_accepts_relative_pat
             turn.clone(),
             "spawn_agent",
             function_payload(json!({
-                "message": "encrypted-spawn-message",
+                "message": "spawn message",
                 "task_name": "test_process"
             })),
         ))
@@ -1010,8 +1010,7 @@ async fn multi_agent_v2_spawn_returns_path_and_send_message_accepts_relative_pat
                     if communication.author == AgentPath::root()
                         && communication.recipient.as_str() == "/root/test_process"
                         && communication.other_recipients.is_empty()
-                        && communication.content.is_empty()
-                        && communication.encrypted_content.as_deref() == Some("encrypted-spawn-message")
+                        && communication.content == "Message Type: NEW_TASK\nTask name: /root/test_process\nSender: /root\nPayload:\nspawn message"
                         && communication.trigger_turn
             )
     }));
@@ -1023,7 +1022,7 @@ async fn multi_agent_v2_spawn_returns_path_and_send_message_accepts_relative_pat
             "send_message",
             function_payload(json!({
                 "target": "test_process",
-                "message": "encrypted-send-message"
+                "message": "send message"
             })),
         ))
         .await
@@ -1037,8 +1036,7 @@ async fn multi_agent_v2_spawn_returns_path_and_send_message_accepts_relative_pat
                     if communication.author == AgentPath::root()
                         && communication.recipient.as_str() == "/root/test_process"
                         && communication.other_recipients.is_empty()
-                        && communication.content.is_empty()
-                        && communication.encrypted_content.as_deref() == Some("encrypted-send-message")
+                        && communication.content == "Message Type: MESSAGE\nTask name: /root/test_process\nSender: /root\nPayload:\nsend message"
                         && !communication.trigger_turn
             )
     }));
@@ -1219,7 +1217,7 @@ async fn multi_agent_v2_send_message_accepts_root_target_from_child() {
             "send_message",
             function_payload(json!({
                 "target": "/root",
-                "message": "encrypted-done"
+                "message": "done"
             })),
         ))
         .await
@@ -1233,8 +1231,7 @@ async fn multi_agent_v2_send_message_accepts_root_target_from_child() {
                     if communication.author == child_path
                         && communication.recipient == AgentPath::root()
                         && communication.other_recipients.is_empty()
-                        && communication.content.is_empty()
-                        && communication.encrypted_content.as_deref() == Some("encrypted-done")
+                        && communication.content == "Message Type: MESSAGE\nTask name: /root\nSender: /root/worker\nPayload:\ndone"
                         && !communication.trigger_turn
             )
     }));
@@ -1747,8 +1744,7 @@ async fn multi_agent_v2_send_message_rejects_interrupt_parameter() {
             if communication.author == AgentPath::root()
                 && communication.recipient.as_str() == "/root/worker"
                 && communication.other_recipients.is_empty()
-                && communication.content.is_empty()
-                && communication.encrypted_content.as_deref() == Some("continue")
+                && communication.content == "Message Type: MESSAGE\nTask name: /root/worker\nSender: /root\nPayload:\ncontinue"
                 && !communication.trigger_turn
     )));
 }
@@ -1833,7 +1829,7 @@ async fn multi_agent_v2_followup_task_completion_notifies_parent_on_every_turn()
                 Op::InterAgentCommunication { communication, .. }
                     if communication.author == AgentPath::root()
                         && communication.recipient == worker_path
-                        && communication.encrypted_content.as_deref() == Some("continue")
+                        && communication.content == "Message Type: NEW_TASK\nTask name: /root/worker\nSender: /root\nPayload:\ncontinue"
                         && communication.trigger_turn
             )
     }));

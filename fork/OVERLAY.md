@@ -27,5 +27,11 @@
 | 0004 | `codex-rs/core/src/agent/control/spawn.rs` | 保留我们的 hunk | 清空 fork 继承项的父线程 ID；上游修复 #33329 后清理 |
 | 0004 | `codex-rs/core/src/agent/control_tests.rs`、`codex-rs/core/tests/suite/subagent_notifications.rs` | 保留我们的 hunk | fork item ID 回归断言 |
 | 0004 | `.github/workflows/fork-ci.yml` | 保留我们的 hunk | 合并后运行对应的子代理集成测试 |
+| 0005 | `codex-rs/tools/src/json_schema/types{,_tests}.rs` | 保留我们的 hunk | 通用工具参数 schema |
+| 0005 | `codex-rs/core/src/tools/handlers/multi_agents_spec.rs`、`multi_agents_v2.rs`、`multi_agents_v2/{spawn,message_tool}.rs` | 保留我们的 hunk | 代理消息统一明文 |
+| 0005 | `codex-rs/core/src/tools/router.rs`、`router_tests.rs` | 保留我们的 hunk | 明文代理消息日志脱敏 |
+| 0005 | `codex-rs/core/src/tools/handlers/multi_agents{_spec,}_tests.rs`、`codex-rs/core/src/tools/spec_plan_tests.rs`、`codex-rs/core/tests/suite/subagent_notifications.rs` | 保留我们的 hunk | 更新既有 schema 与消息投递测试 |
+| 0005 | `codex-rs/ext/history-notes/src/{tools,backend,backend_tests}.rs` | 保留我们的 hunk | history/notes 参数明文透传 |
+| 0005 | `.github/workflows/fork-ci.yml` | 保留我们的 hunk | 合并后运行明文参数集成测试 |
 
 同步核对时从上一行往下走。不要凭记忆决定留哪边。

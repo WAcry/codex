@@ -106,7 +106,6 @@ async fn handle_spawn_agent(
         step_context,
         payload,
         call_id,
-        source,
         ..
     } = invocation;
     let turn = &step_context.turn;
@@ -173,7 +172,6 @@ async fn handle_spawn_agent(
         author,
         new_agent_path.clone(),
         message,
-        &source,
         /*trigger_turn*/ true,
     );
     let context = AgentCommunicationContext::new(AgentCommunicationKind::Spawn, session.thread_id);

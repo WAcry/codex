@@ -12,7 +12,6 @@ use serde_json::Value;
 use serde_json::json;
 
 const HISTORY_NOTES_BACKEND_TIMEOUT: Duration = Duration::from_secs(35);
-const ENCRYPTED_TOOL_ARGUMENTS_HEADER: &str = "x-openai-encrypted-tool-arguments";
 const TOOL_OUTPUT_TRUNCATION_POLICY_HEADER: &str = "x-openai-tool-output-truncation-policy";
 const OPERATION_ERROR_PREFIX: &str = "Unable to perform operation:";
 
@@ -65,18 +64,6 @@ impl HistoryNotesBackend {
                 )
             })?,
         );
-        if matches!(
-            path,
-            "alpha/history/v2/search_contents"
-                | "alpha/notes/v2/search_contents"
-                | "alpha/notes/v2/append_to_file"
-                | "alpha/notes/v2/write_file"
-        ) {
-            request.headers.insert(
-                ENCRYPTED_TOOL_ARGUMENTS_HEADER,
-                HeaderValue::from_static("true"),
-            );
-        }
         request.body = Some(RequestBody::Json(arguments));
         request.timeout = Some(HISTORY_NOTES_BACKEND_TIMEOUT);
         let request = auth.apply_auth(request).await.map_err(|_| {

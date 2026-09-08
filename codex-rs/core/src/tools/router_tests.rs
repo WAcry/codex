@@ -49,8 +49,14 @@ fn tool_log_payload_redacts_plaintext_multi_agent_messages() {
     let payload = ToolPayload::Function {
         arguments: json!({"target": "/root/worker", "message": "secret message"}).to_string(),
     };
+    let call = ToolCall {
+        tool_name: ToolName::namespaced("collaboration", "send_message"),
+        call_id: "call-message".to_string(),
+        payload: payload.clone(),
+        encrypted_function_args: None,
+    };
     assert_eq!(
-        tool_log_payload(&payload, &ToolCallSource::DirectPlaintextMessage),
+        tool_log_payload(&payload, &call.direct_source()),
         "[plaintext arguments]"
     );
     assert_eq!(

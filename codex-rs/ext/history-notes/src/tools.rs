@@ -177,7 +177,7 @@ impl HistoryNotesAction {
                 "type": "object",
                 "properties": {
                     "limit": {"type": "integer", "minimum": 1, "description": "Maximum number of matching items to return."},
-                    "query": {"type": "string", "encrypted": true, "description": "Case-sensitive literal substring to find in item content."},
+                    "query": {"type": "string", "description": "Case-sensitive literal substring to find in item content."},
                     "recent_first": {"type": "boolean", "description": "Whether to return the most recently created matches first."},
                     "tool_namespace": {"anyOf": [{"type": "string"}, {"type": "null"}], "description": "Callable namespace to include. When set, non-tool messages are excluded."},
                     "role": {"anyOf": [{"type": "string", "enum": ["user", "assistant", "tool", "system", "developer"]}, {"type": "null"}], "description": "Message role to include. Null or omission includes all roles."},
@@ -209,7 +209,7 @@ impl HistoryNotesAction {
                 "type": "object",
                 "properties": {
                     "max_matches_per_file": {"type": "integer", "minimum": 1, "description": "Maximum number of matching lines returned per file."},
-                    "query": {"type": "string", "encrypted": true, "description": "Case-sensitive literal substring to find in note lines."},
+                    "query": {"type": "string", "description": "Case-sensitive literal substring to find in note lines."},
                     "recent_file_first": {"type": "boolean", "description": "Whether to order matching files by creation time, newest first."},
                     "max_files": {"type": "integer", "minimum": 1, "description": "Maximum number of matching files returned."},
                     "path_prefix": {"anyOf": [{"type": "string"}, {"type": "null"}], "description": "Note path prefix to search."}
@@ -219,7 +219,7 @@ impl HistoryNotesAction {
             Self::NotesAppendToFile => json!({
                 "type": "object",
                 "properties": {
-                    "text": {"type": "string", "encrypted": true, "description": "Text appended exactly as provided."},
+                    "text": {"type": "string", "description": "Text appended exactly as provided."},
                     "path": {"type": "string", "description": "Note file path to append to."}
                 },
                 "required": ["text", "path"]
@@ -227,7 +227,7 @@ impl HistoryNotesAction {
             Self::NotesWriteFile => json!({
                 "type": "object",
                 "properties": {
-                    "text": {"type": "string", "encrypted": true, "description": "Complete replacement text for the file."},
+                    "text": {"type": "string", "description": "Complete replacement text for the file."},
                     "path": {"type": "string", "description": "Note file path to create or replace."}
                 },
                 "required": ["text", "path"]
