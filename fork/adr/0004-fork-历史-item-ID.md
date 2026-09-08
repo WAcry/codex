@@ -5,7 +5,7 @@
 
 ## 背景
 
-[openai/codex#33329](https://github.com/openai/codex/issues/33329)：子代理继承历史时，上游丢弃 reasoning，却保留最终回答的父线程 `msg_*` ID；服务端可能要求同时提供对应的 `rs_*`，从而拒绝请求。当前基线即使使用 `store=false` 也会保留带前缀的 ID。
+[openai/codex#33329](https://github.com/openai/codex/issues/33329) 记录了 Azure Responses（当时使用 `store=true`）的实际报错：子代理继承历史时，上游丢弃 reasoning，却保留最终回答的父线程 `msg_*` ID；Azure 服务端要求同时提供对应的 `rs_*`，从而拒绝请求。当前基线即使使用 `store=false` 也会保留带前缀的 ID。
 
 ## 决策与重应用
 
