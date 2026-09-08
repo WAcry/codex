@@ -62,7 +62,6 @@ pub(super) async fn handle_message_string_tool(
         session,
         turn,
         call_id,
-        source,
         ..
     } = invocation;
     let receiver_thread_id = resolve_agent_target(&session, &turn, &target).await?;
@@ -100,7 +99,6 @@ pub(super) async fn handle_message_string_tool(
         author,
         receiver_agent_path.clone(),
         message,
-        &source,
         mode.trigger_turn(),
     );
     let kind = match mode {

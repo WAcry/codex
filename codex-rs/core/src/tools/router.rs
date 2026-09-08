@@ -48,10 +48,6 @@ impl ToolCall {
                 self.tool_name.name.as_str(),
                 "spawn_agent" | "send_message" | "followup_task"
             )
-            && self
-                .encrypted_function_args
-                .as_ref()
-                .is_some_and(Vec::is_empty)
         {
             ToolCallSource::DirectPlaintextMessage
         } else {
