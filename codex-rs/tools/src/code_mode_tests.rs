@@ -3,7 +3,6 @@ use super::code_mode_name_for_tool_name;
 use super::tool_spec_to_code_mode_tool_definition;
 use crate::AdditionalProperties;
 use crate::FreeformTool;
-use crate::FreeformToolFormat;
 use crate::JsonSchema;
 use crate::ResponsesApiNamespace;
 use crate::ResponsesApiNamespaceTool;
@@ -90,21 +89,11 @@ fn augment_tool_spec_for_code_mode_preserves_exec_tool_description() {
             name: codex_code_mode::PUBLIC_TOOL_NAME.to_string(),
             description: "Run code".to_string(),
             defer_loading: None,
-            format: FreeformToolFormat {
-                r#type: "grammar".to_string(),
-                syntax: "lark".to_string(),
-                definition: "start: \"exec\"".to_string(),
-            },
         })),
         ToolSpec::Freeform(FreeformTool {
             name: codex_code_mode::PUBLIC_TOOL_NAME.to_string(),
             description: "Run code".to_string(),
             defer_loading: None,
-            format: FreeformToolFormat {
-                r#type: "grammar".to_string(),
-                syntax: "lark".to_string(),
-                definition: "start: \"exec\"".to_string(),
-            },
         })
     );
 }
@@ -115,11 +104,6 @@ fn tool_spec_to_code_mode_tool_definition_returns_augmented_nested_tools() {
         name: "apply_patch".to_string(),
         description: "Apply a patch".to_string(),
         defer_loading: None,
-        format: FreeformToolFormat {
-            r#type: "grammar".to_string(),
-            syntax: "lark".to_string(),
-            definition: "start: \"patch\"".to_string(),
-        },
     });
 
     assert_eq!(
@@ -150,11 +134,6 @@ fn tool_spec_to_code_mode_tool_definition_supports_namespaced_custom_tools() {
             name: "apply_patch".to_string(),
             description: "Apply a patch".to_string(),
             defer_loading: None,
-            format: FreeformToolFormat {
-                r#type: "grammar".to_string(),
-                syntax: "lark".to_string(),
-                definition: "start: \"patch\"".to_string(),
-            },
         })],
     });
 

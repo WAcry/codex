@@ -46,7 +46,6 @@ use codex_protocol::protocol::Op;
 use codex_protocol::protocol::ThreadSettingsOverrides;
 use codex_protocol::user_input::UserInput;
 use codex_tools::FreeformTool;
-use codex_tools::FreeformToolFormat;
 use codex_tools::FunctionCallError;
 use codex_tools::JsonToolOutput;
 use codex_tools::ResponsesApiNamespace;
@@ -4418,7 +4417,9 @@ image(imageItem);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn code_mode_can_apply_patch_via_nested_tool() -> Result<()> {
+#[test_case(false; "direct_and_nested")]
+#[test_case(true; "nested_only")]
+async fn code_mode_can_apply_patch_via_nested_tool(code_mode_only: bool) -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
@@ -4428,10 +4429,37 @@ async fn code_mode_can_apply_patch_via_nested_tool() -> Result<()> {
     );
     let code = format!("text(await tools.apply_patch({patch:?}));\n");
 
-    let (test, second_mock) =
-        run_code_mode_turn(&server, "use exec to run apply_patch", &code).await?;
+    let (test, second_mock) = run_code_mode_turn_with_config(
+        &server,
+        "use exec to run apply_patch",
+        &code,
+        move |config| {
+            if code_mode_only {
+                let _ = config.features.enable(Feature::CodeModeOnly);
+            }
+        },
+    )
+    .await?;
 
     let req = second_mock.single_request();
+    let body = req.body_json();
+    let description = body["tools"]
+        .as_array()
+        .and_then(|tools| tools.iter().find(|tool| tool["name"] == "exec"))
+        .and_then(|tool| tool["description"].as_str())
+        .expect("exec should expose its input instructions");
+    assert!(description.contains("```lark\n\nstart: pragma_source | plain_source"));
+    let patch_description = if code_mode_only {
+        description
+    } else {
+        body["tools"]
+            .as_array()
+            .and_then(|tools| tools.iter().find(|tool| tool["name"] == "apply_patch"))
+            .and_then(|tool| tool["description"].as_str())
+            .expect("apply_patch should expose its input instructions")
+    };
+    assert!(patch_description.contains("```lark\nstart: begin_patch hunk+ end_patch"));
+
     let items = custom_tool_output_items(&req, "call-1");
     let (_, success) = req
         .custom_tool_call_output_content_and_success("call-1")
@@ -5175,13 +5203,11 @@ impl<'call> ToolExecutor<ToolCall<'call>> for NamespacedCustomTool {
             description: "Editing tools.".to_string(),
             tools: vec![ResponsesApiNamespaceTool::Custom(FreeformTool {
                 name: "apply_patch".to_string(),
-                description: format!("Apply a raw editor patch (step {}).", self.generation),
+                description: format!(
+                    "Apply a raw editor patch (step {}).\n\nInput must follow this Lark grammar:\n```lark\nstart: /.+/\n```",
+                    self.generation
+                ),
                 defer_loading: None,
-                format: FreeformToolFormat {
-                    r#type: "grammar".to_string(),
-                    syntax: "lark".to_string(),
-                    definition: "start: /.+/".to_string(),
-                },
             })],
         })
     }
@@ -5269,7 +5295,7 @@ text(JSON.stringify({
         "declare const tools: { editor__apply_patch(input: string): Promise<unknown>; };";
     let description = |generation| {
         format!(
-            "Apply a raw editor patch (step {generation}).\n\nexec tool declaration:\n```ts\n{declaration}\n```"
+            "Apply a raw editor patch (step {generation}).\n\nInput must follow this Lark grammar:\n```lark\nstart: /.+/\n```\n\nexec tool declaration:\n```ts\n{declaration}\n```"
         )
     };
     let first_body = requests[0].body_json();
@@ -5281,11 +5307,6 @@ text(JSON.stringify({
             "type": "custom",
             "name": "apply_patch",
             "description": description(1),
-            "format": {
-                "type": "grammar",
-                "syntax": "lark",
-                "definition": "start: /.+/",
-            },
         })
     );
     let second_body = requests[1].body_json();

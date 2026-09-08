@@ -25,7 +25,6 @@ use codex_protocol::protocol::McpInvocation;
 use codex_protocol::protocol::Op;
 use codex_protocol::user_input::UserInput;
 use codex_tools::FreeformTool;
-use codex_tools::FreeformToolFormat;
 use codex_tools::FunctionCallError;
 use codex_tools::JsonToolOutput;
 use codex_tools::ToolCall;
@@ -955,13 +954,10 @@ impl<'call> ToolExecutor<ToolCall<'call>> for DeferredCustomTool {
     fn spec(&self) -> ToolSpec {
         ToolSpec::Freeform(FreeformTool {
             name: "custom_echo".to_string(),
-            description: "Echo a custom payload.".to_string(),
+            description:
+                "Echo a custom payload.\n\nInput must follow this regex:\n```regex\n^.+$\n```"
+                    .to_string(),
             defer_loading: None,
-            format: FreeformToolFormat {
-                r#type: "grammar".to_string(),
-                syntax: "lark".to_string(),
-                definition: "start: /.+/".to_string(),
-            },
         })
     }
 
@@ -1042,13 +1038,8 @@ async fn tool_search_returns_deferred_custom_tool_and_routes_follow_up_call() ->
             "tools": [{
                 "type": "custom",
                 "name": "custom_echo",
-                "description": "Echo a custom payload.",
+                "description": "Echo a custom payload.\n\nInput must follow this regex:\n```regex\n^.+$\n```",
                 "defer_loading": true,
-                "format": {
-                    "type": "grammar",
-                    "syntax": "lark",
-                    "definition": "start: /.+/",
-                },
             }],
         })]
     );

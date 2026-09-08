@@ -18,14 +18,6 @@ pub struct FreeformTool {
     pub description: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub defer_loading: Option<bool>,
-    pub format: FreeformToolFormat,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct FreeformToolFormat {
-    pub r#type: String,
-    pub syntax: String,
-    pub definition: String,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]

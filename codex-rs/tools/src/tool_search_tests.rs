@@ -45,11 +45,6 @@ fn top_level_custom_tools_are_searchable() {
         name: "apply_patch".to_string(),
         description: "Apply a patch".to_string(),
         defer_loading: None,
-        format: crate::FreeformToolFormat {
-            r#type: "grammar".to_string(),
-            syntax: "lark".to_string(),
-            definition: "start: \"patch\"".to_string(),
-        },
     };
     let search_info = ToolSearchInfo::from_tool_spec(
         ToolSpec::Freeform(custom_tool.clone()),
@@ -60,7 +55,7 @@ fn top_level_custom_tools_are_searchable() {
     assert_eq!(
         (search_info.entry.search_text, search_info.entry.output),
         (
-            "apply_patch Apply a patch lark".to_string(),
+            "apply_patch Apply a patch".to_string(),
             LoadableToolSpec::Namespace(ResponsesApiNamespace {
                 name: "functions".to_string(),
                 description: String::new(),
@@ -136,11 +131,6 @@ fn mixed_namespaced_function_and_custom_tools_are_searchable() {
         name: "apply_patch".to_string(),
         description: "Apply a patch".to_string(),
         defer_loading: None,
-        format: crate::FreeformToolFormat {
-            r#type: "grammar".to_string(),
-            syntax: "lark".to_string(),
-            definition: "start: \"patch\"".to_string(),
-        },
     };
     let spec = ToolSpec::Namespace(crate::ResponsesApiNamespace {
         name: "editor".to_string(),
@@ -156,7 +146,7 @@ fn mixed_namespaced_function_and_custom_tools_are_searchable() {
 
     assert_eq!(
         search_info.entry.search_text,
-        "editor Editing tools lookup_order lookup order Look up an order apply_patch Apply a patch lark"
+        "editor Editing tools lookup_order lookup order Look up an order apply_patch Apply a patch"
     );
     assert_eq!(
         search_info.entry.output,
